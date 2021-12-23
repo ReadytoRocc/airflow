@@ -327,6 +327,26 @@ class TestECSOperator(unittest.TestCase):
         assert "'exitCode': 1" in str(ctx.value)
         client_mock.describe_tasks.assert_called_once_with(cluster='c', tasks=['arn'])
 
+    def test_check_success_tasks_handles_initialization_failure(self):
+        client_mock = mock.Mock()
+        self.ecs.arn = 'arn'
+        self.ecs.client = client_mock
+
+        # exitCode is missing during some container initialization failures
+        client_mock.describe_tasks.return_value = {
+            'tasks': [{'containers': [{'name': 'foo', 'lastStatus': 'STOPPED'}]}]
+        }
+
+        with pytest.raises(Exception) as ctx:
+            self.ecs._check_success_task()
+
+        print(str(ctx.value))
+        assert "This task is not in success state " in str(ctx.value)
+        assert "'name': 'foo'" in str(ctx.value)
+        assert "'lastStatus': 'STOPPED'" in str(ctx.value)
+        assert "exitCode" not in str(ctx.value)
+        client_mock.describe_tasks.assert_called_once_with(cluster='c', tasks=['arn'])
+
     def test_check_success_tasks_raises_pending(self):
         client_mock = mock.Mock()
         self.ecs.client = client_mock
@@ -422,7 +442,7 @@ class TestECSOperator(unittest.TestCase):
         self, launch_type, tags, start_mock, check_mock, wait_mock, xcom_pull_mock, xcom_del_mock
     ):
 
-        self.set_up_operator(launch_type=launch_type, tags=tags)  # pylint: disable=no-value-for-parameter
+        self.set_up_operator(launch_type=launch_type, tags=tags)
         client_mock = self.aws_hook_mock.return_value.get_conn.return_value
         client_mock.describe_task_definition.return_value = {'taskDefinition': {'family': 'f'}}
         client_mock.list_tasks.return_value = {
@@ -476,7 +496,7 @@ class TestECSOperator(unittest.TestCase):
         self, launch_type, tags, check_mock, wait_mock, reattach_mock, xcom_set_mock, xcom_del_mock
     ):
 
-        self.set_up_operator(launch_type=launch_type, tags=tags)  # pylint: disable=no-value-for-parameter
+        self.set_up_operator(launch_type=launch_type, tags=tags)
         client_mock = self.aws_hook_mock.return_value.get_conn.return_value
         client_mock.describe_task_definition.return_value = {'taskDefinition': {'family': 'f'}}
         client_mock.list_tasks.return_value = {'taskArns': []}

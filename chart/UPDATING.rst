@@ -35,15 +35,35 @@ assists users migrating to a new version.
 
 Run ``helm repo update`` before upgrading the chart to the latest version.
 
-Airflow Helm Chart 1.3.0 (dev)
+Airflow Helm Chart 1.4.0 (dev)
 ------------------------------
 
-Default Airflow image is updated to ``2.2.0-python3.7``
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Default Airflow image is updated to ``2.2.3``
+"""""""""""""""""""""""""""""""""""""""""""""
 
-The default Airflow image that is used with the Chart is now ``2.2.0-python3.7``, previously it was ``2.1.4`` (which is Python ``3.6``).
+The default Airflow image that is used with the Chart is now ``2.2.3``, previously it was ``2.2.1``.
 
-The triggerer component requires Python ``3.7``. If you require Python ``3.6`` and Airflow ``2.2.0``, use a ``3.6`` based image and set ``triggerer.enabled=False`` in your values.
+``ingress.web.hosts`` and ``ingress.flower.hosts`` parameters data type has changed and ``ingress.web.tls`` and ``ingress.flower.tls`` have moved
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``ingress.web.hosts`` and ``ingress.flower.hosts`` have had their types have been changed from an array of strings to an array of objects. ``ingress.web.tls`` and ``ingress.flower.tls`` can now be specified per host in ``ingress.web.hosts`` and ``ingress.flower.hosts`` respectively.
+
+The old parameter names will continue to work, however support for them will be removed in a future release so please update your values file.
+
+Airflow Helm Chart 1.3.0
+------------------------
+
+Default Airflow image is updated to ``2.2.1``
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The default Airflow image that is used with the Chart is now ``2.2.1`` (which is Python ``3.7``), previously it was ``2.1.4`` (which is Python ``3.6``).
+
+The triggerer component requires Python ``3.7``. If you require Python ``3.6`` and Airflow ``2.2.0`` or later, use a ``3.6`` based image and set ``triggerer.enabled=False`` in your values.
+
+Resources made configurable for ``airflow-run-airflow-migrations`` job
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now it's possible to set resources requests and limits for migration job through ``migrateDatabaseJob.resources`` value.
 
 Airflow Helm Chart 1.2.0
 ------------------------

@@ -98,7 +98,7 @@ class SSHOperator(BaseOperator):
         if self.cmd_timeout is None:
             self.cmd_timeout = self.timeout if self.timeout else CMD_TIMEOUT
         self.environment = environment
-        self.get_pty = (self.command.startswith('sudo') or get_pty) if self.command else get_pty
+        self.get_pty = get_pty
 
         if self.timeout:
             warnings.warn(
@@ -206,9 +206,13 @@ class SSHOperator(BaseOperator):
         return agg_stdout
 
     def execute(self, context=None) -> Union[bytes, str]:
-        result = None
+        result: Union[bytes, str]
         if self.command is None:
             raise AirflowException("SSH operator error: SSH command not specified. Aborting.")
+
+        # Forcing get_pty to True if the command begins with "sudo".
+        self.get_pty = self.command.startswith('sudo') or self.get_pty
+
         try:
             with self.get_ssh_client() as ssh_client:
                 result = self.run_ssh_client_command(ssh_client, self.command)

@@ -20,9 +20,11 @@ from unittest import mock
 
 import pytest
 from kubernetes.client import ApiClient, models as k8s
+from parameterized import parameterized
 
 from airflow.exceptions import AirflowException
 from airflow.models import DAG, DagRun, TaskInstance
+from airflow.models.xcom import IN_MEMORY_DAGRUN_ID
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 from airflow.utils import timezone
 from airflow.utils.state import State
@@ -49,8 +51,8 @@ class TestKubernetesPodOperator(unittest.TestCase):
     @staticmethod
     def create_context(task):
         dag = DAG(dag_id="dag")
-        task_instance = TaskInstance(task=task, run_id="kub_pod_test")
-        task_instance.dag_run = DagRun(run_id="kub_pod_test", execution_date=DEFAULT_DATE)
+        task_instance = TaskInstance(task=task, run_id=IN_MEMORY_DAGRUN_ID)
+        task_instance.dag_run = DagRun(run_id=IN_MEMORY_DAGRUN_ID, execution_date=DEFAULT_DATE)
         return {
             "dag": dag,
             "ts": DEFAULT_DATE.isoformat(),
@@ -209,13 +211,15 @@ class TestKubernetesPodOperator(unittest.TestCase):
             k.execute(context=context)
         assert delete_pod_mock.called
 
-    def test_randomize_pod_name(self):
+    @parameterized.expand([[True], [False]])
+    def test_provided_pod_name(self, randomize_name):
         name_base = "test"
 
         k = KubernetesPodOperator(
             namespace="default",
             image="ubuntu:16.04",
             name=name_base,
+            random_name_suffix=randomize_name,
             task_id="task",
             in_cluster=False,
             do_xcom_push=False,
@@ -223,8 +227,11 @@ class TestKubernetesPodOperator(unittest.TestCase):
         )
         pod = k.create_pod_request_obj()
 
-        assert pod.metadata.name.startswith(name_base)
-        assert pod.metadata.name != name_base
+        if randomize_name:
+            assert pod.metadata.name.startswith(name_base)
+            assert pod.metadata.name != name_base
+        else:
+            assert pod.metadata.name == name_base
 
     def test_pod_name_required(self):
         with pytest.raises(AirflowException, match="`name` is required"):
@@ -237,9 +244,13 @@ class TestKubernetesPodOperator(unittest.TestCase):
                 cluster_context="default",
             )
 
-    def test_full_pod_spec(self):
+    @parameterized.expand([[True], [False]])
+    def test_full_pod_spec(self, randomize_name):
+        pod_spec_name_base = "hello"
         pod_spec = k8s.V1Pod(
-            metadata=k8s.V1ObjectMeta(name="hello", labels={"foo": "bar"}, namespace="mynamespace"),
+            metadata=k8s.V1ObjectMeta(
+                name=pod_spec_name_base, labels={"foo": "bar"}, namespace="mynamespace"
+            ),
             spec=k8s.V1PodSpec(
                 containers=[
                     k8s.V1Container(
@@ -253,6 +264,7 @@ class TestKubernetesPodOperator(unittest.TestCase):
 
         k = KubernetesPodOperator(
             task_id="task",
+            random_name_suffix=randomize_name,
             in_cluster=False,
             do_xcom_push=False,
             cluster_context="default",
@@ -260,7 +272,11 @@ class TestKubernetesPodOperator(unittest.TestCase):
         )
         pod = self.run_pod(k)
 
-        assert pod.metadata.name == pod_spec.metadata.name
+        if randomize_name:
+            assert pod.metadata.name.startswith(pod_spec_name_base)
+            assert pod.metadata.name != pod_spec_name_base
+        else:
+            assert pod.metadata.name == pod_spec_name_base
         assert pod.metadata.namespace == pod_spec.metadata.namespace
         assert pod.spec.containers[0].image == pod_spec.spec.containers[0].image
         assert pod.spec.containers[0].command == pod_spec.spec.containers[0].command
@@ -281,6 +297,7 @@ class TestKubernetesPodOperator(unittest.TestCase):
         name_base = "world"
         k = KubernetesPodOperator(
             task_id="task",
+            random_name_suffix=randomize_name,
             in_cluster=False,
             do_xcom_push=False,
             cluster_context="default",
@@ -291,9 +308,12 @@ class TestKubernetesPodOperator(unittest.TestCase):
         )
         pod = self.run_pod(k)
 
-        # make sure the kwargs takes precedence (and that name is randomized)
-        assert pod.metadata.name.startswith(name_base)
-        assert pod.metadata.name != name_base
+        # make sure the kwargs takes precedence (and that name is randomized when expected)
+        if randomize_name:
+            assert pod.metadata.name.startswith(name_base)
+            assert pod.metadata.name != name_base
+        else:
+            assert pod.metadata.name == name_base
         assert pod.spec.containers[0].image == image
         # Check labels are added from pod_template_file, the operator itself and
         # the pod identifying labels including Airflow version
@@ -308,7 +328,8 @@ class TestKubernetesPodOperator(unittest.TestCase):
             "execution_date": mock.ANY,
         }
 
-    def test_pod_template_file(self):
+    @parameterized.expand([[True], [False]])
+    def test_pod_template_file(self, randomize_name):
         pod_template_yaml = b"""
             apiVersion: v1
             kind: Pod
@@ -352,11 +373,16 @@ class TestKubernetesPodOperator(unittest.TestCase):
 
             k = KubernetesPodOperator(
                 task_id="task",
+                random_name_suffix=randomize_name,
                 pod_template_file=tpl_file.name,
             )
             pod = self.run_pod(k)
 
-            assert pod.metadata.name == "hello"
+            if randomize_name:
+                assert pod.metadata.name.startswith("hello")
+                assert pod.metadata.name != "hello"
+            else:
+                pod.metadata.name == "hello"
             # Check labels are added from pod_template_file and
             # the pod identifying labels including Airflow version
             assert pod.metadata.labels == {
@@ -410,14 +436,18 @@ class TestKubernetesPodOperator(unittest.TestCase):
                 task_id="task",
                 pod_template_file=tpl_file.name,
                 name=name_base,
+                random_name_suffix=randomize_name,
                 image=image,
                 labels={"hello": "world"},
             )
             pod = self.run_pod(k)
 
-            # make sure the kwargs takes precedence (and that name is randomized)
-            assert pod.metadata.name.startswith(name_base)
-            assert pod.metadata.name != name_base
+            # make sure the kwargs takes precedence (and that name is randomized when expected)
+            if randomize_name:
+                assert pod.metadata.name.startswith(name_base)
+                assert pod.metadata.name != name_base
+            else:
+                assert pod.metadata.name == name_base
             assert pod.spec.containers[0].image == image
             # Check labels are added from pod_template_file, the operator itself and
             # the pod identifying labels including Airflow version
@@ -652,8 +682,8 @@ class TestKubernetesPodOperator(unittest.TestCase):
             do_xcom_push=False,
         )
         pod = self.run_pod(k)
-        ti = TaskInstance(task=k, run_id="test_push_xcom_pod_info")
-        ti.dag_run = DagRun(run_id="test_push_xcom_pod_info", execution_date=DEFAULT_DATE)
+        ti = TaskInstance(task=k, run_id=IN_MEMORY_DAGRUN_ID)
+        ti.dag_run = DagRun(run_id=IN_MEMORY_DAGRUN_ID, execution_date=DEFAULT_DATE)
         pod_name = ti.xcom_pull(task_ids=k.task_id, key='pod_name')
         pod_namespace = ti.xcom_pull(task_ids=k.task_id, key='pod_namespace')
         assert pod_name and pod_name == pod.metadata.name

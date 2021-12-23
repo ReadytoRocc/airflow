@@ -132,6 +132,8 @@ require Breeze Docker images to be installed locally.
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``airflow-provider-yaml-files-ok``     Checks that providers YAML files are valid
 ------------------------------------ ---------------------------------------------------------------- ------------
+``autoflake``                          Remove unused imports and unnecessary code
+------------------------------------ ---------------------------------------------------------------- ------------
 ``base-operator``                      Checks that BaseOperator is imported properly
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``bats-tests``                         Runs BATS bash unit tests
@@ -147,6 +149,12 @@ require Breeze Docker images to be installed locally.
 ``build``                              Builds image for mypy, flake8                                        *
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``build-providers-dependencies``       Regenerates the JSON file with cross-provider dependencies
+------------------------------------ ---------------------------------------------------------------- ------------
+``chart-schema-lint``                  Lint chart/values.schema.json file
+------------------------------------ ---------------------------------------------------------------- ------------
+``capitalized-breeze``                 Breeze has to be Capitalized in Breeze2
+------------------------------------ ---------------------------------------------------------------- ------------
+``changelog-duplicates``               Checks for duplicate changelog entries
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``check-apache-license``               Checks compatibility with Apache License requirements
 ------------------------------------ ---------------------------------------------------------------- ------------
@@ -217,6 +225,8 @@ require Breeze Docker images to be installed locally.
 ``mixed-line-ending``                  Detects if mixed line ending is used (\r vs. \r\n)
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``mypy``                               Runs mypy                                                            *
+------------------------------------ ---------------------------------------------------------------- ------------
+``persist-credentials-disabled``       Check that workflow files have persist-credentials disabled
 ------------------------------------ ---------------------------------------------------------------- ------------
 ``pre-commit-descriptions``            Check if all pre-commits are described in docs
 ------------------------------------ ---------------------------------------------------------------- ------------

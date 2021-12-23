@@ -23,11 +23,16 @@ from airflow.providers.microsoft.mssql.hooks.mssql import MsSqlHook
 
 if TYPE_CHECKING:
     from airflow.hooks.dbapi import DbApiHook
+    from airflow.utils.context import Context
 
 
 class MsSqlOperator(BaseOperator):
     """
     Executes sql code in a specific Microsoft SQL database
+
+    .. seealso::
+        For more information on how to use this operator, take a look at the guide:
+        :ref:`howto/operator:MsSqlOperator`
 
     This operator may use one of two hooks, depending on the ``conn_type`` of the connection.
 
@@ -86,7 +91,7 @@ class MsSqlOperator(BaseOperator):
                 self._hook = MsSqlHook(mssql_conn_id=self.mssql_conn_id, schema=self.database)
         return self._hook
 
-    def execute(self, context: dict) -> None:
+    def execute(self, context: 'Context') -> None:
         self.log.info('Executing: %s', self.sql)
         hook = self.get_hook()
         hook.run(  # type: ignore[union-attr]

@@ -622,7 +622,7 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
         :param labels: A dictionary containing labels for the BiqQuery table.
         :type labels: dict
         :param description: A string containing the description for the BigQuery table.
-        :type descriptin: str
+        :type description: str
         :param encryption_configuration: [Optional] Custom encryption configuration (e.g., Cloud KMS keys).
             **Example**: ::
 
@@ -632,8 +632,8 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
         :type encryption_configuration: dict
         """
         warnings.warn(
-            "This method is deprecated. Please use `BigQueryHook.create_empty_table` method with"
-            "pass passing the `table_resource` object. This gives more flexibility than this method.",
+            "This method is deprecated. Please use `BigQueryHook.create_empty_table` method with "
+            "passing the `table_resource` object. This gives more flexibility than this method.",
             DeprecationWarning,
         )
         location = location or self.location
@@ -1419,7 +1419,7 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
         ) -> List[Dict[str, Any]]:
 
             # Turn schema_field_updates into a dict keyed on field names
-            schema_fields_updates = {field["name"]: field for field in deepcopy(schema_fields_updates)}
+            schema_fields_updates_dict = {field["name"]: field for field in deepcopy(schema_fields_updates)}
 
             # Create a new dict for storing the new schema, initiated based on the current_schema
             # as of Python 3.6, dicts retain order.
@@ -1427,7 +1427,7 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
 
             # Each item in schema_fields_updates contains a potential patch
             # to a schema field, iterate over them
-            for field_name, patched_value in schema_fields_updates.items():
+            for field_name, patched_value in schema_fields_updates_dict.items():
                 # If this field already exists, update it
                 if field_name in new_schema:
                     # If this field is of type RECORD and has a fields key we need to patch it recursively
@@ -1766,7 +1766,7 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
         :param labels: A dictionary containing labels for the BiqQuery table.
         :type labels: dict
         :param description: A string containing the description for the BigQuery table.
-        :type descriptin: str
+        :type description: str
         """
         warnings.warn(
             "This method is deprecated. Please use `BigQueryHook.insert_job` method.", DeprecationWarning
@@ -1822,7 +1822,7 @@ class BigQueryHook(GoogleBaseHook, DbApiHook):
             var_name='destination_project_dataset_table',
         )
 
-        configuration = {
+        configuration: Dict[str, Any] = {
             'load': {
                 'autodetect': autodetect,
                 'createDisposition': create_disposition,
